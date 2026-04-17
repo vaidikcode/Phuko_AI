@@ -9,6 +9,7 @@ import { buildAgentGraph } from "./graph";
 import type { AgentState } from "./state";
 import type { BaseMessage } from "@langchain/core/messages";
 import { eq } from "drizzle-orm";
+import { serverLocalCalendarDayBounds } from "@/lib/schedule/day-bounds";
 
 interface RunResult {
   runId: string;
@@ -125,13 +126,11 @@ async function executeRun(
 }
 
 export async function runHourly(): Promise<RunResult> {
-  const now = new Date();
-  const windowEnd = new Date(now);
-  windowEnd.setMinutes(0, 0, 0);
-  const windowStart = new Date(windowEnd);
-  windowStart.setHours(windowStart.getHours() - 1);
+  const { start: windowStart, end: windowEnd } = serverLocalCalendarDayBounds();
 
-  console.log(`[runner] Starting hourly run: ${windowStart.toISOString()} → ${windowEnd.toISOString()}`);
+  console.log(
+    `[runner] Starting hourly run (full local calendar day): ${windowStart.toISOString()} → ${windowEnd.toISOString()}`
+  );
   return executeRun("hourly", windowStart, windowEnd);
 }
 

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 const NAV = [
-  { href: "/", label: "Chat", icon: MessageSquare },
+  { href: "/", label: "Coach", icon: MessageSquare },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/rules", label: "Rules", icon: BookOpen },
   { href: "/tools", label: "Tools", icon: Wrench },
@@ -33,7 +33,7 @@ export function Sidebar() {
     <aside className="flex h-screen w-56 shrink-0 flex-col border-r border-slate-200 bg-white">
       <div className="px-4 py-5">
         <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Phuko</div>
-        <div className="text-lg font-semibold text-slate-900">Life OS</div>
+        <div className="text-lg font-semibold text-slate-900">Schedule OS</div>
       </div>
       <Separator />
       <nav className="flex flex-1 flex-col gap-0.5 p-2">
@@ -69,7 +69,8 @@ export function Sidebar() {
         {jobsOpen && (
           <div className="mt-1 space-y-1 px-1 pb-2">
             <p className="px-1 text-[10px] leading-snug text-slate-400">
-              Hourly and daily agents run on their own. Use only if you need a manual refresh.
+              Hourly job scans the <strong>whole local day</strong> for bottlenecks vs rules; daily reflects on the prior
+              day. Trigger manually if you need a refresh.
             </p>
             <Button
               type="button"
@@ -80,7 +81,7 @@ export function Sidebar() {
               onClick={() => void runJob("hourly")}
             >
               <Play className="size-3" />
-              {jobBusy === "hourly" ? "Running…" : "Run hourly job"}
+              {jobBusy === "hourly" ? "Running…" : "Run day scan (hourly)"}
             </Button>
             <Button
               type="button"

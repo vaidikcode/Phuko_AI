@@ -1,6 +1,6 @@
 # Phuko AI — Life Operating System
 
-An AI agent that runs hourly and daily to analyse your life patterns, consult your personal rules, and suggest (or execute) calendar optimisations. Built with Next.js 15, LangGraph.js, and Drizzle + libSQL (`@libsql/client`). Runs locally against a `file:./phuko.db` SQLite file by default; swap to a hosted Turso DB with a single env-var change.
+An AI agent that runs **every hour over your full local calendar day** to find bottlenecks, compare against **rules**, and suggest (or execute) concrete calendar fixes—plus a daily pass on the prior day. Built with Next.js 15, LangGraph.js, and Drizzle + libSQL (`@libsql/client`). Runs locally against a `file:./phuko.db` SQLite file by default; swap to a hosted Turso DB with a single env-var change. Set **`TZ`** (see `.env.example`) so “today” for background jobs matches your timezone.
 
 ---
 
@@ -9,11 +9,11 @@ An AI agent that runs hourly and daily to analyse your life patterns, consult yo
 ```
 instrumentation.ts
   └─ runMigrations()          # libSQL schema on boot (creates tables if absent)
-  └─ cron/scheduler.ts        # interval scheduler: hourly at :00, daily at 00:05
-        └─ agent/runner.ts    # runHourly() / runDaily()
+      └─ cron/scheduler.ts        # hourly at :00 (full local day context), daily at 00:05
+        └─ agent/runner.ts    # runHourly() = whole calendar day; runDaily() = yesterday
               └─ graph.ts     # LangGraph StateGraph
                     ├─ loadContext   (rules + prior memories)
-                    ├─ collect       (mock collectors → real MCPs later)
+                    ├─ collect       (sample collectors → real MCPs later)
                     ├─ reason ⟷ ToolNode  (LLM loop)
                     ├─ propose       (extract Suggestion rows)
                     └─ summarize → writeMemory + writeRun
@@ -22,7 +22,7 @@ instrumentation.ts
 ### Tool Registry (3 layers)
 | Layer | Tools | Swap path |
 |---|---|---|
-| Mock collectors | `fetch_window_events`, `fetch_emails_last_hour`, `fetch_slack_last_hour`, `fetch_health_stats` | Replace body in `src/lib/tools/collectors.ts` |
+| Sample collectors | `fetch_window_events`, `fetch_emails_last_hour`, `fetch_slack_last_hour`, `fetch_health_stats` | Replace body in `src/lib/tools/collectors.ts` |
 | Rule CRUD | `list_rules`, `create_rule`, `update_rule`, `delete_rule` | `src/lib/rules/tools.ts` |
 | Custom calendar | `list_events`, `create_event`, … | `src/lib/calendar/` + libSQL |
 
@@ -93,7 +93,7 @@ In the app, expand **Background jobs** at the bottom of the sidebar for discreet
 
 ## Adding Real Data Sources
 
-Each mock collector in `src/lib/tools/collectors.ts` is a LangChain `StructuredTool` with a stable name and schema. To add a real source:
+Each sample collector in `src/lib/tools/collectors.ts` is a LangChain `StructuredTool` with a stable name and schema. To add a real source:
 
 1. Replace the `async` body of the relevant tool with your actual MCP/API call
 2. Keep the return shape (JSON array of events) identical

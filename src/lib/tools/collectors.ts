@@ -1,6 +1,6 @@
 /**
  * Data collector tools — fetch_window_events reads from the local CalendarStore.
- * Remaining collectors are mocked; replace bodies with real MCP/API calls when ready.
+ * Remaining collectors return sample data; replace bodies with real MCP/API calls when ready.
  * The tool names, schemas, and return shapes stay stable.
  */
 
@@ -34,7 +34,7 @@ export const fetchEmailsLastHourTool = tool(
     // TODO: replace with real Gmail/Outlook MCP
     void windowStart;
     void windowEnd;
-    const mock = [
+    const sample = [
       {
         id: "email-001",
         from: "boss@company.com",
@@ -52,7 +52,7 @@ export const fetchEmailsLastHourTool = tool(
         read: false,
       },
     ];
-    return JSON.stringify(mock);
+    return JSON.stringify(sample);
   },
   {
     name: "fetch_emails_last_hour",
@@ -67,7 +67,7 @@ export const fetchSlackLastHourTool = tool(
     // TODO: replace with real Slack MCP
     void windowStart;
     void windowEnd;
-    const mock = [
+    const sample = [
       {
         channel: "#product",
         messageCount: 47,
@@ -81,7 +81,7 @@ export const fetchSlackLastHourTool = tool(
         urgentKeywords: [],
       },
     ];
-    return JSON.stringify(mock);
+    return JSON.stringify(sample);
   },
   {
     name: "fetch_slack_last_hour",
@@ -96,7 +96,7 @@ export const fetchHealthStatsTool = tool(
     // TODO: replace with real health/wearable MCP
     void windowStart;
     void windowEnd;
-    const mock = {
+    const sample = {
       heartRateAvg: 72,
       heartRateMax: 98,
       steps: 820,
@@ -104,7 +104,7 @@ export const fetchHealthStatsTool = tool(
       sleepHoursLastNight: 6.5,
       caffeineIntake: 1,
     };
-    return JSON.stringify(mock);
+    return JSON.stringify(sample);
   },
   {
     name: "fetch_health_stats",

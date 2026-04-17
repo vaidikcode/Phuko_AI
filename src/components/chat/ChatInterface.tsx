@@ -1,10 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useChat } from "@ai-sdk/react";
 import {
-  DefaultChatTransport,
   isTextUIPart,
   isToolUIPart,
   isReasoningUIPart,
@@ -19,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Loader2, Send } from "lucide-react";
+import { useChatSession } from "@/components/chat/ChatSessionProvider";
 
 /** useChat may surface non-Error failures (e.g. ProgressEvent); avoid showing "[object Event]". */
 function formatUnknownError(e: unknown): string {
@@ -175,16 +173,8 @@ function MessageBubble({ message }: { message: UIMessage }) {
 export function ChatInterface() {
   const [text, setText] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
 
-  const { messages, sendMessage, status, stop, error, clearError } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
-    onFinish: () => {
-      void queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
-      void queryClient.invalidateQueries({ queryKey: ["rules"] });
-      void queryClient.invalidateQueries({ queryKey: ["suggestions"] });
-    },
-  });
+  const { messages, sendMessage, status, stop, error, clearError } = useChatSession();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -195,10 +185,10 @@ export function ChatInterface() {
   return (
     <div className="flex h-full min-h-0 flex-col bg-slate-50">
       <div className="border-b border-slate-200 bg-white px-6 py-4">
-        <h1 className="text-lg font-semibold text-slate-900">Chat</h1>
+        <h1 className="text-lg font-semibold text-slate-900">Schedule coach</h1>
         <p className="text-sm text-slate-500">
-          Ask in plain language. The assistant can use your calendar, rules, and context tools—results appear as
-          structured cards below.
+          Describe what feels off. Phuko reads <strong>today</strong> (plus tools), finds bottlenecks and rule clashes,
+          suggests buffers and focus blocks, and can propose <strong>new rules</strong> when a pattern deserves a policy.
         </p>
       </div>
 
@@ -218,7 +208,7 @@ export function ChatInterface() {
         <div className="mx-auto flex max-w-3xl flex-col gap-4 pb-8">
           {messages.length === 0 && (
             <Card className="border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-              Try: “What&apos;s on my calendar this afternoon?” or “Add a rule: no meetings after 6pm.”
+              Try: “Where is my schedule broken today?” or “Suggest a rule so this doesn&apos;t happen again.”
             </Card>
           )}
           {messages.map((m) => (

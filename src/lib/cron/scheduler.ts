@@ -37,7 +37,7 @@ export function start() {
   const tick = () => {
     const now = new Date();
 
-    // Hourly — top of every hour (equivalent to `0 * * * *`)
+    // Hourly — top of every hour: full **local calendar day** schedule scan (see agent/runner runHourly)
     if (now.getMinutes() === 0) {
       const key = hourKey(now);
       if (lastHourlyKey !== key) {

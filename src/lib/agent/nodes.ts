@@ -23,9 +23,11 @@ export async function loadContext(state: AgentState): Promise<Partial<AgentState
     status: ["confirmed", "tentative", "cancelled"],
   });
 
+  const logPrefetchCap = state.kind === "hourly" ? 120 : 24;
+
   const eventLogsMap: Record<string, unknown[]> = {};
   await Promise.all(
-    windowEvents.slice(0, 20).map(async (ev) => {
+    windowEvents.slice(0, logPrefetchCap).map(async (ev) => {
       try {
         const logs = await calendarStore.listLogs(ev.recurrenceParentId ?? ev.id);
         if (logs.length > 0) eventLogsMap[ev.id] = logs;
@@ -67,6 +69,19 @@ export async function collect(state: AgentState): Promise<Partial<AgentState>> {
     results["load_snapshot"] = { error: "unavailable" };
   }
 
+  try {
+    const pairs = await calendarStore.findConflicts(state.windowStart, state.windowEnd);
+    results["conflicts_snapshot"] = {
+      pairCount: pairs.length,
+      pairs: pairs.slice(0, 40).map(([a, b]) => ({
+        a: { id: a.id, title: a.title, start: a.startAt.toISOString(), end: a.endAt.toISOString() },
+        b: { id: b.id, title: b.title, start: b.startAt.toISOString(), end: b.endAt.toISOString() },
+      })),
+    };
+  } catch {
+    results["conflicts_snapshot"] = { error: "unavailable" };
+  }
+
   return { collected: results };
 }
 
@@ -99,45 +114,41 @@ export function buildSystemPrompt(state: AgentState): string {
     2
   );
 
-  return `You are Phuko, an AI life-operating system. You help the user understand the hidden architecture of their day and suggest leverage points to improve it.
+  return `You are **Phuko — schedule repair & leverage**. You are not a generic chatbot. You work from **real calendar data** (below + tools) to **find bottlenecks**, **check active rules**, **suggest concrete calendar fixes** (moves, buffers, focus blocks, breaks), and **call tools** when a change is justified.
 
-Window: ${state.windowStart.toISOString()} → ${state.windowEnd.toISOString()} (kind: ${state.kind})
+Analysis window: **${state.windowStart.toISOString()}** → **${state.windowEnd.toISOString()}** (run kind: **${state.kind}**). For **hourly** runs this window is the **full calendar day** so you always see the whole day’s context.
 
-## Context
+## Continuity
 ${priorDailyText}
 ${lastHourlyText}
 
-## Active Rules
+## Active rules (must influence your diagnosis)
 ${rulesText}
 
-## Load Snapshot (this window)
+## Load snapshot (minutes, back-to-back, priorities)
 ${loadSnapshotText}
 
-## Collected Data (this window)
+## Collected signals (events, email/slack/health placeholders, conflicts snapshot, event logs)
 \`\`\`json
 ${collectedText}
 \`\`\`
 
-## Known Bottleneck Signals — actively look for these
-- **Back-to-back high-energy events**: back_to_back_count > 2 with high energyCost meetings is a burnout signal.
-- **High-priority work after poor sleep**: health stats show < 6h sleep AND priority ≥ 8 deep_work blocks upcoming.
-- **Deep-work blocks repeatedly cancelled or rescheduled**: check event logs via \`list_event_logs\` for pattern.
-- **Meeting overload**: totalMinutesByType.meeting > 240 min/day crowds out deep work.
-- **No recovery time**: no personal/health events in a > 4h stretch of confirmed events.
-- **Rule violations**: active rules not reflected in scheduled events (e.g., rule says "family time 6-7pm" but a meeting is there).
-- **Conflicting events**: use \`find_conflicts\` to surface overlaps and decide which to keep.
+## What to look for (tie each finding to data)
+- **Overlaps / double-booked time** — \`conflicts_snapshot\` or \`find_conflicts\`; say which event should move.
+- **Overload** — too many meetings or deep_work minutes vs recovery; cite \`load_snapshot\` / event list.
+- **Rule clashes** — events that contradict an active rule; quote the rule title and the conflicting event.
+- **Churn** — cancellations/reschedules in \`event_logs_for_window\`; unstable blocks need simplification.
+- **Gaps** — long wasteful holes vs “no focus time”; suggest **specific** blocks (title, type, energy, duration) with tools.
+- **Energy / priority mismatch** — e.g. low-priority meetings eating peak hours.
 
-## Your Job
-1. Analyse the collected data and load snapshot — look for the bottleneck signals above.
-2. Compare against active rules. Flag violations explicitly.
-3. Suggest 1-3 concrete actions. Use tools to act:
-   - \`create_event\` / \`update_event\` / \`delete_event\` for calendar mutations.
-   - \`complete_event\` / \`annotate_event\` to record outcomes.
-   - \`find_conflicts\` to detect overlaps.
-   - \`create_rule\` / \`list_rules\` for rule CRUD.
-4. Produce a short summary (2-3 sentences) for the next context window.
+## Your loop
+1. **Ground** — You already have a full-day payload for hourly; still use tools if you need fresher detail (\`list_events\`, \`get_event\`, \`list_event_logs\`, etc.).
+2. **Diagnose** — 2–5 crisp bullets: bottleneck → evidence (times, IDs, counts).
+3. **Act** — Prefer **small, reversible** edits: \`update_event\`, \`create_event\` (buffers, focus, breaks), \`delete_event\` (soft cancel) when appropriate; \`annotate_event\` / \`complete_event\` for outcomes.
+4. **Rules** — If you see a **stable pattern** that should become policy (e.g. “no meetings before 10”, “Friday afternoon = heads-down”), use \`create_rule\` or mention exact rule text for a future \`create_rule\` call.
+5. **Summarize** — End with 2–4 sentences the next hourly run can reuse (what changed, what’s still at risk).
 
-Be concise, specific, action-oriented. Ground every suggestion in the actual data above. Avoid generic productivity advice.`;
+Tone: direct, calm, **action-first**. No vague wellness tips — only schedule- and rule-grounded recommendations.`;
 }
 
 // ── buildReason (factory — needs tools bound) ─────────────────────────────────
@@ -150,7 +161,9 @@ export function makeReasonNode(tools: StructuredTool[], getLLM: () => import("@l
     const systemMsg = new SystemMessage(buildSystemPrompt(state));
 
     const userMsg = new HumanMessage(
-      `Analyse the ${state.kind} window from ${state.windowStart.toISOString()} to ${state.windowEnd.toISOString()} and take appropriate actions.`
+      state.kind === "hourly"
+        ? `Scheduled **hourly** pass: you have the **entire calendar day** in context (${state.windowStart.toISOString()} → ${state.windowEnd.toISOString()}). Find bottlenecks vs rules, suggest/implement concrete calendar fixes (buffers, reschedules, focus blocks), propose a **new rule** if a pattern deserves policy, then close with a tight summary for the next run.`
+        : `Scheduled **daily** pass for ${state.windowStart.toISOString()} → ${state.windowEnd.toISOString()}: reflect on that day’s load, rules, and outcomes; note carry-over risks and optional rule updates.`
     );
 
     const existingMessages = state.messages ?? [];
