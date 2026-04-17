@@ -173,26 +173,7 @@ export class CalendarStore {
     };
     await db.insert(calendarEvents).values(row);
     this.writeLog(id, "created", actor, undefined, `Event "${input.title}" created`);
-    const created = (await this.get(id))!;
-    // #region agent log
-    fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-      body: JSON.stringify({
-        sessionId: "218496",
-        hypothesisId: "H3",
-        location: "calendar/store.ts:create",
-        message: "calendar row inserted",
-        data: {
-          id: created.id,
-          startMs: created.startAt.getTime(),
-          endMs: created.endAt.getTime(),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-    return created;
+    return (await this.get(id))!;
   }
 
   async update(

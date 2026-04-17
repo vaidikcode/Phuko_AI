@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useLayoutEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -175,7 +175,6 @@ function MessageBubble({ message }: { message: UIMessage }) {
 export function ChatInterface() {
   const [text, setText] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   const { messages, sendMessage, status, stop, error, clearError } = useChat({
@@ -189,35 +188,6 @@ export function ChatInterface() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, status]);
-
-  useLayoutEffect(() => {
-    const el = scrollAreaRef.current;
-    if (!el) return;
-    const partSummary = messages.map((m) => ({
-      role: m.role,
-      partTypes: (Array.isArray(m.parts) ? m.parts : []).map((p) => (p as { type?: string }).type ?? "?"),
-    }));
-    // #region agent log
-    fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-      body: JSON.stringify({
-        sessionId: "218496",
-        hypothesisId: "H5",
-        location: "ChatInterface.tsx",
-        message: "transcript layout snapshot",
-        data: {
-          messageCount: messages.length,
-          status,
-          clientHeight: el.clientHeight,
-          scrollHeight: el.scrollHeight,
-          partSummary,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
   }, [messages, status]);
 
   const busy = status === "streaming" || status === "submitted";
@@ -244,7 +214,7 @@ export function ChatInterface() {
       )}
 
       {/* Native overflow — Radix ScrollArea often collapses to 0 height inside flex parents, hiding the whole thread */}
-      <div ref={scrollAreaRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto flex max-w-3xl flex-col gap-4 pb-8">
           {messages.length === 0 && (
             <Card className="border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">

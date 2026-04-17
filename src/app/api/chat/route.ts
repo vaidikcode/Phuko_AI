@@ -47,37 +47,9 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as { messages?: UIMessage[] };
     const messages = body.messages ?? [];
-    // #region agent log
-    fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-      body: JSON.stringify({
-        sessionId: "218496",
-        hypothesisId: "H1",
-        location: "api/chat/route.ts:POST",
-        message: "chat POST start",
-        data: { uiMessageCount: messages.length },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     const tools = buildPhukoAiToolSet();
 
     const modelMessages = await convertToModelMessages(messages, { tools });
-    // #region agent log
-    fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-      body: JSON.stringify({
-        sessionId: "218496",
-        hypothesisId: "H1",
-        location: "api/chat/route.ts:POST",
-        message: "after convertToModelMessages",
-        data: { modelMessageCount: modelMessages.length },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     const result = streamText({
       model: getChatModel(),
@@ -90,23 +62,6 @@ export async function POST(req: Request) {
 
     return result.toUIMessageStreamResponse();
   } catch (e) {
-    // #region agent log
-    fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-      body: JSON.stringify({
-        sessionId: "218496",
-        hypothesisId: "H1",
-        location: "api/chat/route.ts:POST",
-        message: "chat POST catch",
-        data: {
-          errType: typeof e,
-          errMsg: e instanceof Error ? e.message.slice(0, 300) : String(e).slice(0, 300),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     const tag = typeof e === "object" && e !== null ? Object.prototype.toString.call(e) : "";
     const msg =
       e instanceof Error

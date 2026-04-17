@@ -56,40 +56,8 @@ export async function GET(req: NextRequest) {
       status,
       type,
     });
-    // #region agent log
-    fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-      body: JSON.stringify({
-        sessionId: "218496",
-        hypothesisId: "H4",
-        location: "api/calendar/events/route.ts:GET",
-        message: "list returned",
-        data: {
-          count: events.length,
-          fromMs: fromDate.getTime(),
-          toMs: toDate.getTime(),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     return NextResponse.json(events);
   } catch (err) {
-    // #region agent log
-    fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-      body: JSON.stringify({
-        sessionId: "218496",
-        hypothesisId: "H4",
-        location: "api/calendar/events/route.ts:GET",
-        message: "list catch",
-        data: { err: String(err).slice(0, 300) },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

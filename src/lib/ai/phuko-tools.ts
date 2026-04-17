@@ -24,27 +24,6 @@ export function buildPhukoAiToolSet(): ToolSet {
       execute: async (input) => {
         try {
           const raw = await st.invoke(input as never);
-          if (name === "create_event") {
-            const s = typeof raw === "string" ? raw : JSON.stringify(raw);
-            // #region agent log
-            fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-              body: JSON.stringify({
-                sessionId: "218496",
-                hypothesisId: "H2",
-                location: "phuko-tools.ts:execute",
-                message: "create_event invoke ok",
-                data: {
-                  outLen: s.length,
-                  hasErrorKey: s.includes('"error"'),
-                  preview: s.slice(0, 120),
-                },
-                timestamp: Date.now(),
-              }),
-            }).catch(() => {});
-            // #endregion
-          }
           if (typeof raw === "string") return raw;
           try {
             return JSON.stringify(raw);
@@ -53,20 +32,6 @@ export function buildPhukoAiToolSet(): ToolSet {
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          // #region agent log
-          fetch("http://127.0.0.1:7591/ingest/73c4b017-15bb-4995-8b45-c03b8545c6c9", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "218496" },
-            body: JSON.stringify({
-              sessionId: "218496",
-              hypothesisId: "H2",
-              location: "phuko-tools.ts:execute",
-              message: "tool invoke catch",
-              data: { tool: name, err: msg.slice(0, 400) },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          // #endregion
           return JSON.stringify({ error: msg, tool: name });
         }
       },
