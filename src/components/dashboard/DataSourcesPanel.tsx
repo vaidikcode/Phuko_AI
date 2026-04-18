@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
-import { MOCK_DATA_SOURCES, MOCK_SOURCE_EVENTS } from "@/lib/mock/data";
+import { MOCK_DATA_SOURCES, getDemoSourceEvents } from "@/lib/mock/data";
 import { cn } from "@/lib/utils";
 
 const SOURCE_ICONS: Record<string, string> = {
@@ -15,6 +15,7 @@ const SOURCE_ICONS: Record<string, string> = {
 export function DataSourcesPanel() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
+  const demoEvents = useMemo(() => getDemoSourceEvents(), []);
 
   function mockSync(id: string) {
     setSyncing(id);
@@ -30,7 +31,7 @@ export function DataSourcesPanel() {
 
       <div className="grid grid-cols-2 gap-3">
         {MOCK_DATA_SOURCES.map(src => {
-          const events = MOCK_SOURCE_EVENTS.filter(e => e.source === src.id);
+          const events = demoEvents.filter((e) => e.source === src.id);
           const isOpen = expanded === src.id;
           const isSyncing = syncing === src.id;
 

@@ -60,20 +60,50 @@ export function getMockCalendarDays(): Record<string, "green"|"yellow"|"red"> {
   return data;
 }
 
-export type SourceId = "notion"|"slack"|"google-docs"|"browser";
-export const MOCK_SOURCE_EVENTS = [
-  { id:"ne1", source:"notion"       as SourceId, title:"Product Roadmap Review",     date:"2026-04-18", time:"10:00", duration:60,  tags:["work","planning"] },
-  { id:"ne2", source:"notion"       as SourceId, title:"OKR Progress Check",          date:"2026-04-19", time:"14:00", duration:45,  tags:["work","review"]   },
-  { id:"ne3", source:"notion"       as SourceId, title:"Investor Deck Update",         date:"2026-04-20", time:"11:00", duration:90,  tags:["money","work"]    },
-  { id:"se1", source:"slack"        as SourceId, title:"Team Standup",                 date:"2026-04-18", time:"09:30", duration:15,  tags:["work"]            },
-  { id:"se2", source:"slack"        as SourceId, title:"Dev Sync",                     date:"2026-04-18", time:"16:00", duration:30,  tags:["work"]            },
-  { id:"se3", source:"slack"        as SourceId, title:"Q2 Planning Kickoff",          date:"2026-04-21", time:"13:00", duration:60,  tags:["work","planning"] },
-  { id:"ge1", source:"google-docs"  as SourceId, title:"Write Pitch Deck Draft",       date:"2026-04-18", time:"15:00", duration:90,  tags:["money","knowledge"]},
-  { id:"ge2", source:"google-docs"  as SourceId, title:"Review Technical Spec",        date:"2026-04-19", time:"10:00", duration:60,  tags:["knowledge","work"] },
-  { id:"bh1", source:"browser"      as SourceId, title:"Research: VC landscape",       date:"2026-04-17", time:"20:00", duration:45,  tags:["money","knowledge"]},
-  { id:"bh2", source:"browser"      as SourceId, title:"Reading: Deep Work (resumed)", date:"2026-04-17", time:"21:00", duration:30,  tags:["knowledge"]        },
-  { id:"bh3", source:"browser"      as SourceId, title:"Workout planning session",     date:"2026-04-18", time:"07:00", duration:20,  tags:["health"]           },
+export type SourceId = "notion" | "slack" | "google-docs" | "browser";
+
+/** Local calendar YYYY-MM-DD (not UTC) for the given date. */
+export function localCalendarYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+type DemoEventRow = {
+  id: string;
+  source: SourceId;
+  title: string;
+  /** Days from local today (0 = today). */
+  dayOffset: number;
+  time: string;
+  duration: number;
+  tags: string[];
+};
+
+const DEMO_EVENT_ROWS: DemoEventRow[] = [
+  { id: "ne1", source: "notion", title: "Product Roadmap Review", dayOffset: 0, time: "10:00", duration: 60, tags: ["work", "planning"] },
+  { id: "ne2", source: "notion", title: "OKR Progress Check", dayOffset: 1, time: "14:00", duration: 45, tags: ["work", "review"] },
+  { id: "ne3", source: "notion", title: "Investor Deck Update", dayOffset: 2, time: "11:00", duration: 90, tags: ["money", "work"] },
+  { id: "se1", source: "slack", title: "Team Standup", dayOffset: 0, time: "09:30", duration: 15, tags: ["work"] },
+  { id: "se2", source: "slack", title: "Dev Sync", dayOffset: 0, time: "16:00", duration: 30, tags: ["work"] },
+  { id: "se3", source: "slack", title: "Q2 Planning Kickoff", dayOffset: 3, time: "13:00", duration: 60, tags: ["work", "planning"] },
+  { id: "ge1", source: "google-docs", title: "Write Pitch Deck Draft", dayOffset: 0, time: "15:00", duration: 90, tags: ["money", "knowledge"] },
+  { id: "ge2", source: "google-docs", title: "Review Technical Spec", dayOffset: 1, time: "10:00", duration: 60, tags: ["knowledge", "work"] },
+  { id: "bh1", source: "browser", title: "Research: VC landscape", dayOffset: -1, time: "20:00", duration: 45, tags: ["money", "knowledge"] },
+  { id: "bh2", source: "browser", title: "Reading: Deep Work (resumed)", dayOffset: -1, time: "21:00", duration: 30, tags: ["knowledge"] },
+  { id: "bh3", source: "browser", title: "Workout planning session", dayOffset: 0, time: "07:00", duration: 20, tags: ["health"] },
 ];
+
+/** Demo events with `date` anchored to the user’s local calendar (same rows Phuko seeds into the DB). */
+export function getDemoSourceEvents(): Array<DemoEventRow & { date: string }> {
+  const base = new Date();
+  return DEMO_EVENT_ROWS.map((row) => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + row.dayOffset);
+    return { ...row, date: localCalendarYmd(d) };
+  });
+}
 
 export const MOCK_DATA_SOURCES = [
   { id:"notion",      label:"Notion",        abbr:"N", color:"bg-gray-800",   lastSync:"4 min ago", eventCount:3, status:"connected" as const },

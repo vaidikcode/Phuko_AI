@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Zap, Clock, CheckCircle2, AlertTriangle, Globe, MessageSquare, FileText } from "lucide-react";
-import { MOCK_METRICS, MOCK_SOURCE_EVENTS } from "@/lib/mock/data";
+import { MOCK_METRICS, getDemoSourceEvents, localCalendarYmd } from "@/lib/mock/data";
 import { cn } from "@/lib/utils";
 
 const CURRENT_ACTIVITY = {
@@ -42,7 +42,9 @@ function usePomodoroTimer(initialMinutes: number) {
 
 export default function ActivityPage() {
   const timer = usePomodoroTimer(47); // 47 min remaining on 90-min block
-  const upcomingToday = MOCK_SOURCE_EVENTS.filter(e => e.date === "2026-04-18").slice(0, 3);
+  const demoEvents = useMemo(() => getDemoSourceEvents(), []);
+  const todayStr = useMemo(() => localCalendarYmd(new Date()), []);
+  const upcomingToday = demoEvents.filter((e) => e.date === todayStr).slice(0, 3);
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden">

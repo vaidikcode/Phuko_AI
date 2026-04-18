@@ -46,20 +46,31 @@ export function RulesSetup({ onComplete }: { onComplete: () => void }) {
   const [connectPhase, setConnectPhase] = useState<"idle"|"connecting"|"done">("idle");
   const [connectedCount, setConnectedCount] = useState(0);
 
+  // Simulate source connections only when entering step 3. Do not depend on `connectPhase`:
+  // setting "connecting" would re-run this effect, cleanup would clear the interval, and Notion would stay stuck.
   useEffect(() => {
-    if (step !== 3 || connectPhase !== "idle") return;
+    if (step !== 3) {
+      setConnectPhase("idle");
+      setConnectedCount(0);
+      return;
+    }
+
     setConnectPhase("connecting");
+    setConnectedCount(0);
+
+    const MS_PER_SOURCE = 220;
     let i = 0;
     const iv = setInterval(() => {
-      i++;
+      i += 1;
       setConnectedCount(i);
       if (i >= SOURCES.length) {
         clearInterval(iv);
         setConnectPhase("done");
       }
-    }, 600);
+    }, MS_PER_SOURCE);
+
     return () => clearInterval(iv);
-  }, [step, connectPhase]);
+  }, [step]);
 
   const togglePriority = (id: string) =>
     setPriorities(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
