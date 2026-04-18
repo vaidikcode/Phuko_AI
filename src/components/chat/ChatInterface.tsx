@@ -170,11 +170,26 @@ function MessageBubble({ message }: { message: UIMessage }) {
   );
 }
 
-export function ChatInterface() {
+const AUTO_START_MSG =
+  "Give me my morning brief. Analyse today's schedule, surface the top bottlenecks, and tell me the 3 most important things I should do today — be specific.";
+
+export function ChatInterface({ autoStart = false }: { autoStart?: boolean }) {
   const [text, setText] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const autoFired = useRef(false);
 
   const { messages, sendMessage, status, stop, error, clearError } = useChatSession();
+
+  // Auto-trigger briefing when chat first loads with no messages
+  useEffect(() => {
+    if (!autoStart || autoFired.current || messages.length > 0) return;
+    const t = setTimeout(() => {
+      if (autoFired.current) return;
+      autoFired.current = true;
+      void sendMessage({ text: AUTO_START_MSG });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [autoStart, messages.length, sendMessage]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -185,10 +200,12 @@ export function ChatInterface() {
   return (
     <div className="flex h-full min-h-0 flex-col bg-slate-50">
       <div className="border-b border-slate-200 bg-white px-6 py-4">
-        <h1 className="text-lg font-semibold text-slate-900">Schedule coach</h1>
+        <h1 className="text-lg font-semibold text-slate-900">Phuko Coach</h1>
         <p className="text-sm text-slate-500">
-          Describe what feels off. Phuko reads <strong>today</strong> (plus tools), finds bottlenecks and rule clashes,
-          suggests buffers and focus blocks, and can propose <strong>new rules</strong> when a pattern deserves a policy.
+          {autoStart
+            ? "Your AI coach analyses your schedule, rules, and data sources to give you a personalised daily brief."
+            : <>Describe what feels off — Phuko reads <strong>today</strong>, finds bottlenecks and rule clashes, and can fix your calendar directly.</>
+          }
         </p>
       </div>
 
@@ -206,9 +223,12 @@ export function ChatInterface() {
       {/* Native overflow — Radix ScrollArea often collapses to 0 height inside flex parents, hiding the whole thread */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto flex max-w-3xl flex-col gap-4 pb-8">
-          {messages.length === 0 && (
+          {messages.length === 0 && !busy && (
             <Card className="border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-              Try: “Where is my schedule broken today?” or “Suggest a rule so this doesn&apos;t happen again.”
+              {autoStart
+                ? <span className="flex items-center justify-center gap-2"><Loader2 className="size-4 animate-spin text-emerald-600" /> Starting your briefing…</span>
+                : <>Try: "Where is my schedule broken today?" or "Suggest a rule so this doesn&apos;t happen again."</>
+              }
             </Card>
           )}
           {messages.map((m) => (

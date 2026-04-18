@@ -1,7 +1,7 @@
 import "server-only";
 
 /**
- * Calendar day on the **Node process local clock** (set `TZ` in production so “today” matches your life).
+ * Calendar day on the **Node process local clock** (set `TZ` in production so "today" matches your life).
  * Used by the hourly agent job for a full-day window.
  */
 export function serverLocalCalendarDayBounds(now = new Date()): { start: Date; end: Date } {

@@ -9,7 +9,7 @@ type ChatSessionValue = ReturnType<typeof useChat>;
 
 const ChatSessionContext = createContext<ChatSessionValue | null>(null);
 
-/** Browser-local calendar day as ISO range (matches “today” for the user). */
+/** Browser-local calendar day as ISO range (matches "today" for the user). */
 function clientLocalDayBoundsIso(): { start: string; end: string } {
   const d = new Date();
   const y = d.getFullYear();

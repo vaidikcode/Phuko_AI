@@ -19,7 +19,7 @@ function summarizeConflicts(pairs: Array<[CalendarEvent, CalendarEvent]>): unkno
 }
 
 /**
- * Server-side snapshot of “today” for the chat model (rules, load, conflicts, events).
+ * Server-side snapshot of "today" for the chat model (rules, load, conflicts, events).
  * Uses client day bounds from headers when present; otherwise server-local calendar day.
  */
 export async function buildChatDayContextBlock(req: Request): Promise<string> {
@@ -65,7 +65,7 @@ export async function buildChatDayContextBlock(req: Request): Promise<string> {
   );
 
   return [
-    "## Today’s schedule snapshot (server — use tools to verify before edits)",
+    "## Today's schedule snapshot (server — use tools to verify before edits)",
     `Window: **${iso(from)}** → **${iso(to)}**`,
     "",
     "### Active rules",
