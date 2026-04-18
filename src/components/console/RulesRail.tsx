@@ -360,35 +360,80 @@ export function RulesRail({
       {sourcesOpen && (
         <div className="p-2 space-y-1">
           {MOCK_DATA_SOURCES.map((src) => {
-            const Icon = SRC_ICON[src.id] ?? FileText;
+            const connected = connections[src.id as SourceId] ?? true;
+            const confirming = revokeConfirm === src.id;
             return (
-              <div key={src.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
+              <div
+                key={src.id}
+                className={cn(
+                  "group flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors",
+                  connected ? "hover:bg-surface-base" : "opacity-60"
+                )}
+              >
                 <div
                   className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded text-[9px] font-bold",
-                    src.color
+                    "flex size-5 shrink-0 items-center justify-center rounded text-[9px] font-bold transition-all",
+                    connected ? src.color : "bg-surface-border text-ink-faint"
                   )}
                 >
                   {src.abbr}
                 </div>
-                <span className="flex-1 truncate text-[11px] font-medium text-ink">
+                <span className={cn("flex-1 truncate text-[11px] font-medium", connected ? "text-ink" : "text-ink-faint line-through")}>
                   {src.label}
                 </span>
-                <span className="flex items-center gap-1 text-[10px] text-ink-faint shrink-0">
-                  <span className="size-1.5 rounded-full bg-brand-500 inline-block" />
-                  {src.eventCount}
-                </span>
+
+                {connected ? (
+                  <>
+                    <span className="flex items-center gap-1 text-[10px] text-ink-faint shrink-0 group-hover:hidden">
+                      <span className="size-1.5 rounded-full bg-brand-500 inline-block" />
+                      {src.eventCount}
+                    </span>
+                    {confirming ? (
+                      <div className="hidden group-hover:flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => { revoke(src.id as SourceId); setRevokeConfirm(null); }}
+                          className="text-[10px] font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded px-1.5 py-0.5 transition-colors"
+                        >
+                          Yes, revoke
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRevokeConfirm(null)}
+                          className="text-[10px] text-ink-faint hover:text-ink p-0.5 rounded"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setRevokeConfirm(src.id as SourceId)}
+                        className="hidden group-hover:flex items-center gap-1 text-[10px] text-ink-faint hover:text-red-500 transition-colors shrink-0"
+                        title="Revoke access"
+                      >
+                        <Unplug className="size-3" />
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => reconnect(src.id as SourceId)}
+                    className="flex items-center gap-1 text-[10px] font-medium text-brand-600 hover:text-brand-700 transition-colors shrink-0"
+                    title="Reconnect"
+                  >
+                    <PlugZap className="size-3" />
+                    Connect
+                  </button>
+                )}
               </div>
             );
           })}
           <button
             type="button"
             disabled={!onSend}
-            onClick={() =>
-              onSend?.(
-                "Fetch signals from all connected sources: emails, Slack, and health stats."
-              )
-            }
+            onClick={() => onSend?.("Fetch signals from all connected sources: emails, Slack, and health stats.")}
             className="flex items-center gap-1.5 mt-1 px-2 text-[11px] font-medium text-brand-600 hover:text-brand-700 transition-colors disabled:opacity-40"
           >
             <RefreshCw className="size-3" />
