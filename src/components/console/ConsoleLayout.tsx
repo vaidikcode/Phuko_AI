@@ -48,7 +48,7 @@ export function ConsoleLayout() {
 
           {/* Center: Thread */}
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface-base">
-            <Thread autoStart onSendReady={handleSendReady} />
+            <Thread onSendReady={handleSendReady} />
           </div>
 
           {/* Right: Today */}
