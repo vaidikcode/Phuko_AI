@@ -86,14 +86,9 @@ function FormattedText({ text }: { text: string }) {
   );
 }
 
-const AUTO_START =
-  "Give me my briefing for today: surface bottlenecks in my schedule, check my active rules against the day, and show me the 3 most important moves — use tool calls to show the schedule.";
-
 export function Thread({
-  autoStart = false,
   onSendReady,
 }: {
-  autoStart?: boolean;
   /** Called once with a stable `send` function so the parent can wire sidebar actions */
   onSendReady?: (send: (text: string) => void) => void;
 }) {
@@ -101,7 +96,6 @@ export function Thread({
   const [text, setText] = useState("");
   const [reschedulingEvent, setReschedulingEvent] = useState<CalEvent | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const autoFired = useRef(false);
 
   const transport = new DefaultChatTransport({
     api: "/api/chat",
@@ -145,16 +139,6 @@ export function Thread({
   }, [send, onSendReady]);
 
   useEffect(() => {
-    if (!autoStart || autoFired.current || messages.length > 0) return;
-    const t = setTimeout(() => {
-      if (autoFired.current) return;
-      autoFired.current = true;
-      send(AUTO_START);
-    }, 600);
-    return () => clearTimeout(t);
-  }, [autoStart, messages.length, send]);
-
-  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
 
@@ -175,7 +159,6 @@ export function Thread({
 
   const clearAndNew = () => {
     setMessages([]);
-    autoFired.current = false;
     setText("");
     setReschedulingEvent(null);
   };
@@ -195,7 +178,7 @@ export function Thread({
           {messages.length === 0 && busy && (
             <div className="flex items-center justify-center gap-2 py-8 text-sm text-ink-subtle">
               <Loader2 className="size-4 animate-spin text-brand-600" />
-              Preparing your briefing…
+              Thinking…
             </div>
           )}
 
